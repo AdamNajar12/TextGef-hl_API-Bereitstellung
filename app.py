@@ -1,15 +1,16 @@
+import os
 from flask import Flask, request, jsonify
 from transformers import pipeline
-import os
+
+# ✅ Set writable cache for HuggingFace transformers
+os.environ["TRANSFORMERS_CACHE"] = "/tmp/.cache"
+os.makedirs("/tmp/.cache", exist_ok=True)
 
 app = Flask(__name__)
-# S2I/WSGI expects `application` variable
 application = app
 
-# pick model via env var or default
 MODEL_NAME = os.getenv("MODEL_NAME", "distilbert-base-uncased-finetuned-sst-2-english")
 
-# load model at startup (this can be slow because it downloads weights)
 print(f"Loading model {MODEL_NAME} ...")
 classifier = pipeline("sentiment-analysis", model=MODEL_NAME)
 print("Model loaded.")
@@ -27,7 +28,5 @@ def predict():
     out = classifier(text)
     return jsonify({"result": out})
 
-# ✅ Add this block for Windows local testing
 if __name__ == "__main__":
-    # host=0.0.0.0 makes it reachable from localhost and OpenShift style
     app.run(host="0.0.0.0", port=8080, debug=True)
